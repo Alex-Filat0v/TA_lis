@@ -30,6 +30,8 @@ class TelegramBot:
         parameters_for_request = {
             "chat_id": self.chat_id,
             "text": text,
+            "parse_mode": "Markdown",
+            "disable_web_page_preview": True
         }
 
         # try - except для отлова непредвиденных ошибок

@@ -124,16 +124,22 @@ async def main(db: DatabaseModule, tg_bot: TelegramBot, skin_mgr: SkinManager) -
     """
     Основная функция, которая запускает процессы парсинга и отправки скинов.
     """
-    # Загружаем API ключ лисскинса из переменной окружения.
+    # Загружаем API ключ лисскинса, а также данные для подключения к бд из переменных окружения.
     lisskins_api_token = os.getenv("LISSKINS_API_TOKEN")
+
+    db_host = os.getenv("DB_HOST")
+    db_port = os.getenv("DB_PORT")
+    db_user = os.getenv("DB_USER")
+    db_password = os.getenv("DB_PASSWORD")
+    db_name = os.getenv("DB_NAME")
 
     # Подключаемся к базе данных
     await db.connect(
-        host="127.0.0.1",
-        port=3308,
-        user="root",
-        password="1234",
-        db="ta"
+        host=db_host,
+        port=int(db_port),
+        user=db_user,
+        password=db_password,
+        db=db_name
     )
 
     # Параллельно запускаем задачу парсинга скинов и отправки этих скинов в чат

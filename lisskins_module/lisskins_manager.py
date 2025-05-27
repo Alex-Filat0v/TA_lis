@@ -154,8 +154,12 @@ async def main(api):
 if __name__ == "__main__":
     import asyncio
     from datetime import datetime
+    import os
+    from dotenv import load_dotenv
+    load_dotenv()
 
-    API_TOKEN = ""
+    API_TOKEN = os.getenv("LISSKINS_API_TOKEN")
+
     asyncio.run(main(API_TOKEN))
 
     #asyncio.run(buy(API_TOKEN))

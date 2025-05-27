@@ -87,14 +87,25 @@ class DatabaseModule:
 
 
 async def main():
+    import os
+    from dotenv import load_dotenv
+    load_dotenv()
+
     db = DatabaseModule()
 
+    db_host = os.getenv("DB_HOST")
+    db_port = os.getenv("DB_PORT")
+    db_user = os.getenv("DB_USER")
+    db_password = os.getenv("DB_PASSWORD")
+    db_name = os.getenv("DB_NAME")
+
+    # Подключаемся к базе данных
     await db.connect(
-        host="127.0.0.1",
-        port=3308,
-        user="root",
-        password="1234",
-        db="ta"
+        host=db_host,
+        port=int(db_port),
+        user=db_user,
+        password=db_password,
+        db=db_name
     )
     table = "cs2_sales_data_2025_02_03"
     data = await db.load_items(table)

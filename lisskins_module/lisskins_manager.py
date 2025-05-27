@@ -155,7 +155,7 @@ if __name__ == "__main__":
     import asyncio
     from datetime import datetime
 
-    API_TOKEN = "cbe0870e-dfda-4a34-8bb7-fd25d2f30ce5"
+    API_TOKEN = ""
     asyncio.run(main(API_TOKEN))
 
     #asyncio.run(buy(API_TOKEN))

@@ -1,5 +1,5 @@
 import aiohttp
-from typing import Dict, Any, Optional, List
+from typing import Optional, List
 
 
 class LisskinsAPIModule:
@@ -28,7 +28,8 @@ class LisskinsAPIModule:
         if not api_token:
             raise ValueError("API ключ не задан")
 
-        self.JSON_URL = "https://lis-skins.com/market_export_json/csgo.json"
+        self.JSON_URL_SHORT = "https://lis-skins.com/market_export_json/csgo.json"
+        self.JSON_URL_LONG = "https://lis-skins.com/market_export_json/api_csgo_unlocked.json"
         self.BUY_URL = "https://api.lis-skins.com/v1/market/buy"
 
         self.api_token = api_token #!
@@ -45,7 +46,7 @@ class LisskinsAPIModule:
             await self.session.close()
 
     @staticmethod
-    async def _collect_data(all_items: Optional[dict]) -> dict:
+    async def _collect_data_for_short_request(all_items: Optional[dict]) -> dict:
         """
         Метод для структурирования и сбора всей информации о скинах с парсинга сайта.
 
@@ -56,9 +57,35 @@ class LisskinsAPIModule:
         for item in all_items:
             name = item.get("name", "")
             price = item.get("price", 0.0)
+            url = item.get("url", "")
 
             if name not in lis_items:
                 lis_items[name] = {
+                    "url": url,
+                    "min_price": price,
+                }
+            else:
+                if price < lis_items[name]["min_price"]:
+                    lis_items[name]["min_price"] = price
+        return lis_items
+
+    @staticmethod
+    async def _collect_data_for_long_request(all_items: Optional[dict]) -> dict:
+        """
+        Метод для структурирования и сбора всей информации о скинах с парсинга сайта.
+
+        :param all_items: Все предметы, которые спарсили с сайта лисскинс.
+        :return: Преобразованный словарь с парсинга в словарь вида {"name": "...", "price": "..."}.
+        """
+        lis_items = {}
+        for items in all_items["items"]:
+            name = items["name"]
+            item_id = items["id"]
+            price = items["price"]
+
+            if name not in lis_items:
+                lis_items[name] = {
+                    "item_id": item_id,
                     "min_price": price,
                 }
             else:
@@ -73,11 +100,29 @@ class LisskinsAPIModule:
         :return: Спаршенные и преобразованные для дальнейшего использования данные с сайта.
         """
         # Ассинхронно делаем GET запрос через нашу сессию по url для парсинга всех скинов в json формате
-        async with self.session.get(url=self.JSON_URL) as response:
+        async with self.session.get(url=self.JSON_URL_SHORT) as response:
             try:
                 response.raise_for_status()
                 resp = await response.json()
-                data = await self._collect_data(resp)
+                data = await self._collect_data_for_short_request(resp)
+                return data
+
+            except Exception as e:
+                print(f"Ошибка при попытке спарсить сайт лисскинс через json запрос: {e}")
+                raise
+
+    async def parse_with_long_json_request(self) -> dict:
+        """
+        Метод для парсинга всех скинов с сайта лисскинс через json запрос по API.
+
+        :return: Спаршенные и преобразованные для дальнейшего использования данные с сайта.
+        """
+        # Ассинхронно делаем GET запрос через нашу сессию по url для парсинга всех скинов в json формате
+        async with self.session.get(url=self.JSON_URL_LONG) as response:
+            try:
+                response.raise_for_status()
+                resp = await response.json()
+                data = await self._collect_data_for_long_request(resp)
                 return data
 
             except Exception as e:
@@ -106,12 +151,14 @@ class LisskinsAPIModule:
             "ids": skin_ids,
             "partner": partner,
             "token": token,
-            "skip_unavailable": skip_unavailable
         }
 
         # Если установленна максимальная цена - добавляем ее в тело запроса
         if max_price is not None:
             payload["max_price"] = max_price
+
+        if skip_unavailable is not None:
+            payload["skip_unavailable"] = skip_unavailable
 
         # Ассинхронно делаем POST запрос через нашу сессию по url для покупки, а в тело запроса вставляем сформированный
         # ранее список
@@ -122,9 +169,9 @@ class LisskinsAPIModule:
 
 
 async def buy(api):
-
+    # https://steamcommunity.com/tradeoffer/new/?partner=1601122261&token=Umx33Ies
     # Обязательно нужно заполнить эти данные для теста покупок
-    skin_ids = []
+    skin_ids = [176272156]
     partner = ""
     token = ""
 
@@ -144,10 +191,8 @@ async def main(api):
     async with LisskinsAPIModule(api_token=api) as parser:
         resp = await parser.parse_with_json_request()
 
-    end_time = datetime.now()
-
-    print(resp)
-    print(f"Парсинг завершился за: {end_time - start_time}")
+    #print(resp)
+    print(f"Парсинг завершился за: {datetime.now() - start_time}")
     print(f"Спарсил скинов: {len(resp)}")
 
 
@@ -156,6 +201,7 @@ if __name__ == "__main__":
     from datetime import datetime
     import os
     from dotenv import load_dotenv
+
     load_dotenv()
 
     API_TOKEN = os.getenv("LISSKINS_API_TOKEN")
@@ -163,3 +209,6 @@ if __name__ == "__main__":
     asyncio.run(main(API_TOKEN))
 
     #asyncio.run(buy(API_TOKEN))
+
+
+

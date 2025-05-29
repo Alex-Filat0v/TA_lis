@@ -26,7 +26,7 @@ class DatabaseModule:
             item_name_encoded = row["item_name"]
             corridor_avg = row["corridor_avg"]
             decoded_name = urllib.parse.unquote(item_name_encoded)
-            db_items[decoded_name] = corridor_avg
+            db_items[decoded_name] = {"corridor_avg": corridor_avg}
         return db_items
 
     async def connect(self, host: str, port: int, user: str, password: str, db: str) -> None:
@@ -65,8 +65,7 @@ class DatabaseModule:
         query = f"""
                 SELECT item_name, corridor_avg
                 FROM {table_name}
-                WHERE passed_criteria = 1
-                  AND corridor_avg > 0.1
+                WHERE corridor_avg > 0.1
             """
 
         # Ассинхронно из нашего подключения открываем коннектор и из него курсор и делаем запрос
@@ -107,7 +106,7 @@ async def main():
         password=db_password,
         db=db_name
     )
-    table = "cs2_sales_data_2025_02_03"
+    table = "steam"
     data = await db.load_items(table)
     print(data)
 
